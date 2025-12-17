@@ -1,6 +1,6 @@
-# Chat v2 - Real-Time Chat System
+# AuroraChat - Real-Time Chat System
 
-Chat v2 is a real-time chat application built with WebSockets, Kafka, Redis, and MongoDB.
+AuroraChat is a real-time chat application built with WebSockets, Kafka, Redis, and MongoDB.
 
 ---
 
