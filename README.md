@@ -127,3 +127,17 @@ Kafka decouples message ingestion from fan-out.
 ```bash
 ./run.sh
 ```
+
+## Future Improvements
+
+### Scaling
+
+Run multiple WebSocket servers and scale with K8s.
+
+### Fan-Out and Hot Rooms/Partitions
+
+Add a fan-out layer to avoid broadcasting messages directly from the WebSocket server.
+
+### Dynamic Rooms and History
+
+Allow dynamic room creation and persist messages so new users can load the last K messages when joining.
