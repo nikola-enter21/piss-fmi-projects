@@ -1,9 +1,9 @@
 import { WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
-import { producer } from "../kafka/producer";
 import { allowMessage } from "../rate-limit";
 import { joinRoom, leaveAllRooms, broadcastOnline } from "./rooms";
+import { redisPub } from "../redis";
 import { setOnline, setOffline } from "./presence";
 import { WSContext } from "./ws.types";
 import { isWSContext } from "./ws.guards";
@@ -74,19 +74,14 @@ export function createWsServer(server: any) {
         return;
       }
 
-      await producer.send({
-        topic: `chat.${ws.roomId}`,
-        messages: [
-          {
-            key: ws.roomId,
-            value: JSON.stringify({
-              user: ws.username,
-              text: msg.text,
-              ts: Date.now(),
-            }),
-          },
-        ],
-      });
+      await redisPub.publish(
+        `chat.${ws.roomId}`,
+        JSON.stringify({
+          user: ws.username,
+          text: msg.text,
+          ts: Date.now(),
+        })
+      );
     });
 
     ws.on("close", async () => {

@@ -4,8 +4,7 @@ import cors from "cors";
 
 import { createWsServer } from "./ws/server";
 import { env } from "./config/env";
-import { producer, startProducer } from "./kafka/producer";
-import { consumer, startConsumer } from "./kafka/consumer";
+import { startChatFanout } from "./redis/fanout";
 
 let shuttingDown = false;
 
@@ -15,10 +14,8 @@ async function main() {
   app.use(express.json());
 
   const server = http.createServer(app);
-
   const wsCleanup = createWsServer(server);
-  await startProducer();
-  await startConsumer();
+  const fanoutCleanup = await startChatFanout();
 
   server.listen(env.PORT, () => {
     console.log(`Chat service listening on ${env.PORT}`);
@@ -27,19 +24,15 @@ async function main() {
   const shutdown = async () => {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log("Graceful shutdown (chat-service)");
-
-    wsCleanup();
-    server.close();
 
     try {
-      await producer.disconnect();
-      await consumer.disconnect();
+      await fanoutCleanup();
     } catch (e) {
-      console.error("Kafka shutdown error", e);
+      console.error("Redis shutdown error", e);
     }
 
-    process.exit(0);
+    wsCleanup();
+    server.close(() => process.exit(0));
   };
 
   process.on("SIGINT", shutdown);
