@@ -1,15 +1,10 @@
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { producer } from "../kafka/producer";
 import { allowMessage } from "../rate-limit";
-import {
-  joinRoom,
-  leaveAllRooms,
-  markOnline,
-  markOffline,
-  broadcastOnline,
-} from "./rooms";
+import { joinRoom, leaveAllRooms, broadcastOnline } from "./rooms";
+import { setOnline, setOffline } from "./presence";
 import { WSContext } from "./ws.types";
 import { isWSContext } from "./ws.guards";
 
@@ -56,7 +51,7 @@ export function createWsServer(server: any) {
     ws.roomId = "general";
 
     joinRoom(ws.roomId, ws);
-    markOnline(ws.roomId, ws.userId, ws.username);
+    await setOnline(ws.roomId, ws.userId, ws.username);
     await broadcastOnline(ws.roomId);
 
     ws.on("message", async (raw) => {
@@ -83,7 +78,7 @@ export function createWsServer(server: any) {
         topic: `chat.${ws.roomId}`,
         messages: [
           {
-            key: ws.roomId, // вече НЕ е optional
+            key: ws.roomId,
             value: JSON.stringify({
               user: ws.username,
               text: msg.text,
@@ -96,7 +91,7 @@ export function createWsServer(server: any) {
 
     ws.on("close", async () => {
       leaveAllRooms(ws);
-      markOffline(ws.roomId!, ws.userId!);
+      await setOffline(ws.roomId!, ws.userId!);
       await broadcastOnline(ws.roomId!);
     });
   });

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Chat v2</title>
+    <title>AuroraChat</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <style>
@@ -345,6 +345,18 @@
         };
       }
 
+      function isTokenValid(token) {
+        try {
+          const payload = parseJwt(token);
+          if (!payload.exp) return false;
+
+          const now = Date.now() / 1000;
+          return payload.exp > now;
+        } catch {
+          return false;
+        }
+      }
+
       function logout() {
         if (ws) ws.close();
         localStorage.removeItem("token");
@@ -361,8 +373,17 @@
         }
       };
 
-      const savedToken = localStorage.token;
-      if (savedToken) startApp(savedToken);
+      (function bootstrap() {
+        const token = localStorage.token;
+
+        if (token && isTokenValid(token)) {
+          startApp(token);
+        } else {
+          localStorage.removeItem("token");
+          authEl.style.display = "block";
+          appEl.style.display = "none";
+        }
+      })();
     </script>
   </body>
 </html>
