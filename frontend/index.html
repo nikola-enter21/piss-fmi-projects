@@ -231,6 +231,9 @@
     <div id="toast"></div>
 
     <script>
+      const USERS_API = "http://api.users.127.0.0.1.nip.io";
+      const CHAT_WS = "ws://ws.chat.127.0.0.1.nip.io";
+
       let ws;
       let currentUser;
 
@@ -257,7 +260,7 @@
       }
 
       async function login() {
-        const res = await fetch("http://localhost:4000/api/auth/login", {
+        const res = await fetch(`${USERS_API}/api/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -278,7 +281,7 @@
       }
 
       async function register() {
-        const res = await fetch("http://localhost:4000/api/auth/register", {
+        const res = await fetch(`${USERS_API}/api/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -314,7 +317,7 @@
         authEl.style.display = "none";
         appEl.style.display = "flex";
 
-        ws = new WebSocket("ws://localhost:8080?token=" + token);
+        ws = new WebSocket(`${CHAT_WS}?token=${token}`);
 
         ws.onmessage = (e) => {
           const msg = JSON.parse(e.data);
@@ -324,10 +327,10 @@
             return;
           }
 
-          if (msg.type === "online_users") {
-            renderOnline(msg.users);
-            return;
-          }
+          // if (msg.type === "online_users") {
+          //   renderOnline(msg.users);
+          //   return;
+          // }
 
           if (msg.text) {
             const wrap = document.createElement("div");

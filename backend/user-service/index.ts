@@ -4,8 +4,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cors from "cors";
 
-import { env } from "./config/env";
-import { User } from "./models/user.model";
+import { env } from "./src/config/env";
+import { User } from "./src/models/user.model";
 
 async function main() {
   await mongoose.connect(env.MONGO_URL);

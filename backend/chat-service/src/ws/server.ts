@@ -2,9 +2,8 @@ import { WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { allowMessage } from "../rate-limit";
-import { joinRoom, leaveAllRooms, broadcastOnline } from "./rooms";
+import { joinRoom, leaveAllRooms } from "./rooms";
 import { redisPub } from "../redis";
-import { setOnline, setOffline } from "./presence";
 import { WSContext } from "./ws.types";
 import { isWSContext } from "./ws.guards";
 
@@ -19,12 +18,7 @@ export function createWsServer(server: any) {
   const heartbeatInterval = setInterval(() => {
     wss.clients.forEach((ws) => {
       if (!isWSContext(ws)) return;
-
-      if (ws.isAlive === false) {
-        ws.terminate();
-        return;
-      }
-
+      if (ws.isAlive === false) return ws.terminate();
       ws.isAlive = false;
       ws.ping();
     });
@@ -32,9 +26,7 @@ export function createWsServer(server: any) {
 
   wss.on("connection", async (ws: WSContext, req) => {
     ws.isAlive = true;
-    ws.on("pong", () => {
-      ws.isAlive = true;
-    });
+    ws.on("pong", () => (ws.isAlive = true));
 
     const token = new URL(req.url ?? "", "http://x").searchParams.get("token");
     if (!token) return ws.close();
@@ -49,28 +41,15 @@ export function createWsServer(server: any) {
     ws.userId = user.userId;
     ws.username = user.username;
     ws.roomId = "general";
-
     joinRoom(ws.roomId, ws);
-    await setOnline(ws.roomId, ws.userId, ws.username);
-    await broadcastOnline(ws.roomId);
 
     ws.on("message", async (raw) => {
-      let msg: any;
-      try {
-        msg = JSON.parse(raw.toString());
-      } catch {
-        return;
-      }
-
+      const msg = JSON.parse(raw.toString());
       if (!msg.text) return;
 
       const allowed = await allowMessage(ws.userId!, ws.roomId!);
       if (!allowed) {
         ws.send(JSON.stringify({ type: "rate_limited" }));
-        return;
-      }
-      if (!ws.roomId || !ws.userId || !ws.username) {
-        ws.close();
         return;
       }
 
@@ -86,12 +65,9 @@ export function createWsServer(server: any) {
 
     ws.on("close", async () => {
       leaveAllRooms(ws);
-      await setOffline(ws.roomId!, ws.userId!);
-      await broadcastOnline(ws.roomId!);
     });
   });
 
-  // cleanup function
   return () => {
     clearInterval(heartbeatInterval);
     wss.clients.forEach((ws) => ws.terminate());

@@ -2,9 +2,9 @@ import http from "http";
 import express from "express";
 import cors from "cors";
 
-import { createWsServer } from "./ws/server";
-import { env } from "./config/env";
-import { startChatFanout } from "./redis/fanout";
+import { createWsServer } from "./src/ws/server";
+import { env } from "./src/config/env";
+import { startChatFanout } from "./src/redis/fanout";
 
 let shuttingDown = false;
 
@@ -15,7 +15,7 @@ async function main() {
 
   const server = http.createServer(app);
   const wsCleanup = createWsServer(server);
-  const fanoutCleanup = await startChatFanout();
+  const messagesCleanup = await startChatFanout();
 
   server.listen(env.PORT, () => {
     console.log(`Chat service listening on ${env.PORT}`);
@@ -26,7 +26,7 @@ async function main() {
     shuttingDown = true;
 
     try {
-      await fanoutCleanup();
+      await messagesCleanup();
     } catch (e) {
       console.error("Redis shutdown error", e);
     }
