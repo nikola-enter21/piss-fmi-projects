@@ -22,6 +22,6 @@
 
     "resolveJsonModule": true
   },
-  "include": ["chat-service/**/*.ts", "user-service/**/*.ts"],
+  "include": ["chat-service/**/*.ts", "user-service/**/*.ts", "ingestion/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

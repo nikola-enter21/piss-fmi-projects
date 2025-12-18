@@ -5,8 +5,3 @@ export const redis = new Redis({
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
 });
-
-export const redisSub = new Redis({
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
-});

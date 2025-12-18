@@ -1,11 +1,12 @@
 import { WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
-import { allowMessage } from "../rate-limit";
-import { joinRoom, leaveAllRooms } from "./rooms";
-import { redisPub } from "../redis";
+import { allowMessage } from "../redis/rate-limit";
+import { redis } from "../redis";
 import { WSContext } from "./ws.types";
 import { isWSContext } from "./ws.guards";
+import { joinRoom, leaveAllRooms } from "./rooms";
+import { pushChatMessage } from "../redis/streams";
 
 interface JwtPayload {
   userId: string;
@@ -52,15 +53,26 @@ export function createWsServer(server: any) {
         ws.send(JSON.stringify({ type: "rate_limited" }));
         return;
       }
+      if (!ws.roomId || !ws.userId || !ws.username) {
+        return;
+      }
 
-      await redisPub.publish(
-        `chat.${ws.roomId}`,
-        JSON.stringify({
-          user: ws.username,
+      await Promise.all([
+        redis.publish(
+          `chat.${ws.roomId}`,
+          JSON.stringify({
+            user: ws.username,
+            text: msg.text,
+            ts: Date.now(),
+          })
+        ),
+        pushChatMessage({
+          roomId: ws.roomId,
           text: msg.text,
-          ts: Date.now(),
-        })
-      );
+          userId: ws.userId,
+          username: ws.username,
+        }),
+      ]);
     });
 
     ws.on("close", async () => {
