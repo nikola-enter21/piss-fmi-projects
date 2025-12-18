@@ -1,4 +1,4 @@
-import { redis } from "../redis";
+import { redis } from ".";
 
 const WINDOW_MS = 1000;
 const MAX_MESSAGES = 3;
