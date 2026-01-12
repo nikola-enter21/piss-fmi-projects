@@ -1,5 +1,7 @@
 # AuroraChat
 
+![AuroraChat Backend Architecture Diagram](./backend-diagram.png)
+
 AuroraChat is a horizontally scalable real-time chat system built with **WebSockets**, **Redis**, and **MongoDB**.
 
 ## Architecture
