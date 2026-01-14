@@ -1706,8 +1706,8 @@ try {
   // Create consumer group (idempotent)
   await redis.xgroup("CREATE", STREAM_KEY, GROUP_NAME, "0", "MKSTREAM");
 } catch (e) {
+  // Rethrow unexpected errors; ignore BUSYGROUP (group already exists)
   if (!e.message.includes("BUSYGROUP")) throw e;
-  // Group already exists, continue
 }
 ```
 
