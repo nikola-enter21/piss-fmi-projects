@@ -29,12 +29,17 @@ export function createWsServer(server: any) {
     ws.isAlive = true;
     ws.on("pong", () => (ws.isAlive = true));
 
-    const token = new URL(req.url ?? "", "http://x").searchParams.get("token");
+    // Extract token from Sec-WebSocket-Protocol header
+    const protocols = req.headers["sec-websocket-protocol"];
+    const token = protocols?.split(",").map(p => p.trim()).find(p => p.startsWith("Bearer."))?.slice(7);
+    
     if (!token) return ws.close();
 
     let user: JwtPayload;
     try {
       user = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+      // Accept the protocol to complete the handshake
+      ws.protocol = "Bearer." + token;
     } catch {
       return ws.close();
     }

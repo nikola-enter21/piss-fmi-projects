@@ -322,11 +322,22 @@ chat-service/
 1. **Connection Establishment**:
    ```typescript
    wss.on("connection", async (ws: WSContext, req) => {
-     // Extract JWT from query parameter
-     const token = new URL(req.url ?? "", "http://x").searchParams.get("token");
+     // Extract JWT from Sec-WebSocket-Protocol header (secure method)
+     // Token is passed as "Bearer.<token>" subprotocol
+     const protocols = req.headers["sec-websocket-protocol"];
+     const token = protocols?.split(",").map(p => p.trim()).find(p => p.startsWith("Bearer."))?.slice(7);
+     
+     if (!token) return ws.close();
      
      // Verify JWT
-     const user = jwt.verify(token, env.JWT_SECRET);
+     let user: JwtPayload;
+     try {
+       user = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+       // Accept the protocol to complete the handshake
+       ws.protocol = "Bearer." + token;
+     } catch {
+       return ws.close();
+     }
      
      // Attach user context to WebSocket
      ws.userId = user.userId;
@@ -2179,8 +2190,9 @@ currentUser = parseJwt(token).username;
 
 ```javascript
 function startApp(token) {
-  // Connect with token as query parameter
-  ws = new WebSocket(`${CHAT_WS}?token=${token}`);
+  // Connect with token in Sec-WebSocket-Protocol header (secure method)
+  // This prevents token exposure in URL logs
+  ws = new WebSocket(CHAT_WS, `Bearer.${token}`);
 
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);

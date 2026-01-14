@@ -311,7 +311,7 @@
         document.getElementById("usernameLabel").innerText = currentUser;
         document.getElementById("logoutBtn").onclick = logout;
 
-        ws = new WebSocket(`${CHAT_WS}?token=${token}`);
+        ws = new WebSocket(CHAT_WS, `Bearer.${token}`);
 
         ws.onmessage = (e) => {
           const msg = JSON.parse(e.data);
