@@ -321,6 +321,15 @@ chat-service/
 
 1. **Connection Establishment**:
    ```typescript
+   // Configure WebSocket server to accept Bearer.* subprotocols
+   const wss = new WebSocketServer({ 
+     server,
+     handleProtocols: (protocols) => {
+       const authProtocol = protocols.find((p) => p.startsWith("Bearer."));
+       return authProtocol || false;
+     }
+   });
+   
    wss.on("connection", async (ws: WSContext, req) => {
      // Extract JWT from Sec-WebSocket-Protocol header (secure method)
      // Token is passed as "Bearer.<token>" subprotocol
@@ -333,8 +342,6 @@ chat-service/
      let user: JwtPayload;
      try {
        user = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-       // Accept the protocol to complete the handshake
-       ws.protocol = "Bearer." + token;
      } catch {
        return ws.close();
      }
@@ -2602,6 +2609,15 @@ if (violations > 3) {
 
 1. **Authentication Required**:
    ```typescript
+   // Configure server to accept Bearer.* subprotocols during handshake
+   const wss = new WebSocketServer({ 
+     server,
+     handleProtocols: (protocols) => {
+       const authProtocol = protocols.find((p) => p.startsWith("Bearer."));
+       return authProtocol || false;
+     }
+   });
+   
    // Extract token from Sec-WebSocket-Protocol header
    const protocols = req.headers["sec-websocket-protocol"];
    const token = protocols?.split(",").map(p => p.trim()).find(p => p.startsWith("Bearer."))?.slice(7);
@@ -2609,6 +2625,7 @@ if (violations > 3) {
    ```
    
    - Token passed via `Sec-WebSocket-Protocol` header as `Bearer.<token>` subprotocol
+   - Protocol selection handled during handshake phase via `handleProtocols` callback
    - Prevents token exposure in URL query parameters and server logs
    - Client usage: `new WebSocket(url, "Bearer." + token)`
 
@@ -2616,7 +2633,6 @@ if (violations > 3) {
    ```typescript
    try {
      user = jwt.verify(token, env.JWT_SECRET);
-     ws.protocol = "Bearer." + token;  // Accept the subprotocol
    } catch {
      return ws.close();  // Invalid token rejected
    }

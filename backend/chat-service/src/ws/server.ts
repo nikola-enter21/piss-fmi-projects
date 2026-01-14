@@ -14,7 +14,14 @@ interface JwtPayload {
 }
 
 export function createWsServer(server: any) {
-  const wss = new WebSocketServer({ server });
+  const wss = new WebSocketServer({ 
+    server,
+    handleProtocols: (protocols) => {
+      // Accept any Bearer.* protocol for authentication
+      const authProtocol = protocols.find((p) => p.startsWith("Bearer."));
+      return authProtocol || false;
+    }
+  });
 
   const heartbeatInterval = setInterval(() => {
     wss.clients.forEach((ws) => {
@@ -38,8 +45,6 @@ export function createWsServer(server: any) {
     let user: JwtPayload;
     try {
       user = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-      // Accept the protocol to complete the handshake
-      ws.protocol = "Bearer." + token;
     } catch {
       return ws.close();
     }
