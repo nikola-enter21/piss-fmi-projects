@@ -334,7 +334,12 @@ chat-service/
      // Extract JWT from Sec-WebSocket-Protocol header (secure method)
      // Token is passed as "Bearer.<token>" subprotocol
      const protocols = req.headers["sec-websocket-protocol"];
-     const token = protocols?.split(",").map(p => p.trim()).find(p => p.startsWith("Bearer."))?.slice(7);
+     const protocolHeader = Array.isArray(protocols) ? protocols.join(",") : protocols;
+     const BEARER_PREFIX = "Bearer.";
+     const token = protocolHeader?.split(",")
+       .map(p => p.trim())
+       .find(p => p.startsWith(BEARER_PREFIX))
+       ?.slice(BEARER_PREFIX.length);
      
      if (!token) return ws.close();
      
@@ -2620,7 +2625,12 @@ if (violations > 3) {
    
    // Extract token from Sec-WebSocket-Protocol header
    const protocols = req.headers["sec-websocket-protocol"];
-   const token = protocols?.split(",").map(p => p.trim()).find(p => p.startsWith("Bearer."))?.slice(7);
+   const protocolHeader = Array.isArray(protocols) ? protocols.join(",") : protocols;
+   const BEARER_PREFIX = "Bearer.";
+   const token = protocolHeader?.split(",")
+     .map(p => p.trim())
+     .find(p => p.startsWith(BEARER_PREFIX))
+     ?.slice(BEARER_PREFIX.length);
    if (!token) return ws.close();  // No anonymous connections
    ```
    
