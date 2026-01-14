@@ -2186,13 +2186,20 @@ function startApp(token) {
     const msg = JSON.parse(e.data);
     if (!msg.text) return;
 
-    // Render message
+    // Render message - using textContent to prevent XSS
     const el = document.createElement("div");
     el.className = "message " + (msg.user === currentUser ? "me" : "");
-    el.innerHTML = `
-      <div class="user">${msg.user}</div>
-      <div class="text">${msg.text}</div>
-    `;
+
+    const userEl = document.createElement("div");
+    userEl.className = "user";
+    userEl.textContent = msg.user;
+
+    const textEl = document.createElement("div");
+    textEl.className = "text";
+    textEl.textContent = msg.text;
+
+    el.appendChild(userEl);
+    el.appendChild(textEl);
 
     messages.appendChild(el);
     messages.scrollTop = messages.scrollHeight;  // Auto-scroll
