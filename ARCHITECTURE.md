@@ -2602,14 +2602,21 @@ if (violations > 3) {
 
 1. **Authentication Required**:
    ```typescript
-   const token = new URL(req.url).searchParams.get("token");
+   // Extract token from Sec-WebSocket-Protocol header
+   const protocols = req.headers["sec-websocket-protocol"];
+   const token = protocols?.split(",").map(p => p.trim()).find(p => p.startsWith("Bearer."))?.slice(7);
    if (!token) return ws.close();  // No anonymous connections
    ```
+   
+   - Token passed via `Sec-WebSocket-Protocol` header as `Bearer.<token>` subprotocol
+   - Prevents token exposure in URL query parameters and server logs
+   - Client usage: `new WebSocket(url, "Bearer." + token)`
 
 2. **Token Verification**:
    ```typescript
    try {
      user = jwt.verify(token, env.JWT_SECRET);
+     ws.protocol = "Bearer." + token;  // Accept the subprotocol
    } catch {
      return ws.close();  // Invalid token rejected
    }
@@ -2630,13 +2637,9 @@ if (violations > 3) {
    }
    ```
 
-**Vulnerabilities:**
+**Remaining Security Considerations:**
 
-1. **Token in URL** (query parameter):
-   - **Risk**: Logged in server access logs
-   - **Mitigation**: Use WebSocket sub-protocol or headers
-
-2. **No Message Validation**:
+1. **No Message Validation**:
    ```typescript
    const msg = JSON.parse(raw.toString());
    if (!msg.text) return;  // Basic validation only
@@ -2644,7 +2647,7 @@ if (violations > 3) {
    - **Risk**: XSS if message rendered without sanitization
    - **Mitigation**: Validate/sanitize message content
 
-3. **No Connection Limits**:
+2. **No Connection Limits**:
    - **Risk**: Single user can open unlimited connections
    - **Mitigation**: Track connections per user
 
